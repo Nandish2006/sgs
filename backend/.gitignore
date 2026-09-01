@@ -1,0 +1,4 @@
+bin/
+obj/
+*.user
+GrievanceApi/appsettings.json
