@@ -15,7 +15,18 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (connString != null && (connString.Contains("postgres") || connString.Contains("Host=")))
+    
+    if (connString != null && connString.StartsWith("postgres://"))
+    {
+        var uri = new Uri(connString);
+        var userInfo = uri.UserInfo.Split(':');
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var db = uri.LocalPath.TrimStart('/');
+        connString = $"Host={host};Port={port};Username={userInfo[0]};Password={userInfo[1]};Database={db};Pooling=true;SSL Mode=Require;Trust Server Certificate=True;";
+    }
+
+    if (connString != null && connString.Contains("Host="))
     {
         options.UseNpgsql(connString);
     }
