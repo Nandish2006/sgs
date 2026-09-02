@@ -13,7 +13,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (connString != null && (connString.Contains("postgres") || connString.Contains("Host=")))
+    {
+        options.UseNpgsql(connString);
+    }
+    else
+    {
+        options.UseSqlServer(connString);
+    }
+});
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -22,12 +32,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173", // Vite dev server
-                "http://localhost:3000"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
@@ -74,11 +81,11 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Apply pending migrations automatically on startup (fine for coursework/demo use).
+// Apply schema automatically on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    db.Database.EnsureCreated();
 }
 
 // --- Middleware pipeline ---

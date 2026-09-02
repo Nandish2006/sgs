@@ -1,0 +1,43 @@
+databases:
+  - name: sgs-db
+    databaseName: sgs
+    user: sgs
+    plan: free
+
+services:
+  # Backend Web Service
+  - type: web
+    name: sgs-backend
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: sgs-db
+          property: connectionString
+      - key: Jwt__Key
+        generateValue: true
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: 8080
+      # Override CORS for the backend to allow the frontend URL once deployed
+      - key: FRONTEND_URL
+        value: ""
+
+  # Frontend Static Site
+  - type: web
+    name: sgs-frontend
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: frontend
+    envVars:
+      - key: VITE_API_BASE
+        fromService:
+          type: web
+          name: sgs-backend
+          envVarKey: RENDER_EXTERNAL_URL

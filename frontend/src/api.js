@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5080/api'
+let API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5080/api'
+if (API_BASE && !API_BASE.endsWith('/api')) {
+  API_BASE += '/api'
+}
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('grievance_admin_token')
